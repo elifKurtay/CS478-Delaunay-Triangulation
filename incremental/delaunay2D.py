@@ -167,6 +167,10 @@ class Delaunay2D:
         return [(a-4, b-4, c-4)
                 for (a, b, c) in self.triangles if a > 3 and b > 3 and c > 3]
 
+    def exportEdges(self):
+        return [[(a-4, b-4), (b-4, c-4), (a-4, c-4)]
+                for (a, b, c) in self.triangles if a > 3 and b > 3 and c > 3]
+
     def exportCircles(self):
         """Export the circumcircles as a list of (center, radius)
         """
