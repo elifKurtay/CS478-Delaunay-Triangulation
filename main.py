@@ -3,7 +3,7 @@ import sys
 
 import pygame
 import numpy as np
-import dnq.delaunay
+from dnq.delaunay import delaunay as dnqdel
 
 from Button import Button
 from dnq.mesh import gen_random
@@ -52,7 +52,7 @@ def add_inc(surface):
 
 def mesh_dq(surface, numSeeds):
     seeds = gen_random(760, 760, numSeeds)
-    edges = dnq.delaunay(seeds)
+    edges = dnqdel(seeds)
     for s in seeds:
         pygame.draw.circle(surface, "#CC00CC", s, 5)
 

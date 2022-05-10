@@ -7,9 +7,9 @@ Mesh: points, edges.
 import pygame
 import numpy as np
 import math
-from config import *
-import config as G
-from delaunay import delaunay
+from dnq.config import *
+import dnq.config as G
+from dnq.delaunay import delaunay
 
 
 class Mesh:
