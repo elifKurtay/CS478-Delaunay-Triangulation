@@ -5,6 +5,7 @@ The divide-and-conquer algorithm for computing Delaunay triangulation of a set o
 """
 
 import numpy as np
+import pygame
 
 edges = [] # container for edges
 
@@ -37,6 +38,29 @@ def delaunay(S):
     return edges
 
 
+def step(S, screen, surface, pic):
+    """Assumes S is a list of points of form (x, y).
+    Returns a list of edges that form a Delaunay triangulation of S."""
+
+    if len(S) < 2:
+        print("Must be at least two points.")
+        return
+
+    global edges
+    edges = []
+    S = np.asarray(S, dtype=np.float64)
+
+    # Sort points by x coordinate, y is a tiebreaker.
+    S.view(dtype=[('f0', S.dtype), ('f1', S.dtype)]).sort(order=['f0', 'f1'], axis=0)
+
+    # Remove duplicates.
+    dupes = [i for i in range(1, len(S)) if S[i - 1][0] == S[i][0] and S[i - 1][1] == S[i][1]]
+    if dupes:
+        S = np.delete(S, dupes, 0)
+
+    triangulateGUI(S, screen, surface, pic)
+    edges = [e for e in edges if e.data is None]  # clean the garbage
+    return edges
 # -----------------------------------------------------------------
 # Quad edge data structure.
 
@@ -148,6 +172,135 @@ def triangulate(S):
                 # Add cross edge base from base.org to lcand.dest
                 base = connect(base.sym, rcand.sym)
 
+        return ldo, rdo
+
+
+clock = pygame.time.Clock()
+def triangulateGUI(S, screen, surface, pic):
+    if len(S) == 2:
+        a = make_edge(S[0], S[1])
+        # GUI
+        pic.fill((160, 160, 160))
+        for e in [e for e in edges if e.data is None]:
+            pygame.draw.line(surface=pic, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
+        surface.blit(pic, (1, 1))
+        screen.blit(pygame.transform.scale(surface, screen.get_rect().size), (0, 0))
+        pygame.display.flip()
+        clock.tick(90)
+        pygame.time.wait(1000)
+        return a, a.sym
+
+    elif len(S) == 3:
+        # Create edges a connecting p1 to p2 and b connecting p2 to p3.
+        p1, p2, p3 = S[0], S[1], S[2]
+        a = make_edge(p1, p2)
+        b = make_edge(p2, p3)
+        splice(a.sym, b)
+
+        # Close the triangle.
+        if right_of(p3, a):
+            connect(b, a)
+            # GUI
+            pic.fill((160, 160, 160))
+            for e in [e for e in edges if e.data is None]:
+                pygame.draw.line(surface=pic, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
+            surface.blit(pic, (1, 1))
+            screen.blit(pygame.transform.scale(surface, screen.get_rect().size), (0, 0))
+            pygame.display.flip()
+            clock.tick(90)
+            pygame.time.wait(1000)
+
+            return a, b.sym
+        elif left_of(p3, a):
+            c = connect(b, a)
+            # GUI
+            pic.fill((160, 160, 160))
+            for e in [e for e in edges if e.data is None]:
+                pygame.draw.line(surface=pic, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
+            surface.blit(pic, (1, 1))
+            screen.blit(pygame.transform.scale(surface, screen.get_rect().size), (0, 0))
+            pygame.display.flip()
+            clock.tick(90)
+            pygame.time.wait(1000)
+
+            return c.sym, c
+        else:  # the three points are collinear
+            # GUI
+            pic.fill((160, 160, 160))
+            for e in [e for e in edges if e.data is None]:
+                pygame.draw.line(surface=pic, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
+            surface.blit(pic, (1, 1))
+            screen.blit(pygame.transform.scale(surface, screen.get_rect().size), (0, 0))
+            pygame.display.flip()
+            clock.tick(90)
+            pygame.time.wait(1000)
+            return a, b.sym
+
+    else:
+        # Recursively subdivide S.
+        m = (len(S) + 1) // 2
+        L, R = S[:m], S[m:]
+        ldo, ldi = triangulateGUI(L, screen, surface, pic)
+        rdi, rdo = triangulateGUI(R, screen, surface, pic)
+
+        # Compute the upper common tangent of L and R.
+        while True:
+            if right_of(rdi.org, ldi):
+                ldi = ldi.sym.onext
+            elif left_of(ldi.org, rdi):
+                rdi = rdi.sym.oprev
+            else:
+                break
+
+        # Create a first cross edge base from rdi.org to ldi.org.
+        base = connect(ldi.sym, rdi)
+
+        # Adjust ldo and rdo
+        if ldi.org[0] == ldo.org[0] and ldi.org[1] == ldo.org[1]:
+            ldo = base
+        if rdi.org[0] == rdo.org[0] and rdi.org[1] == rdo.org[1]:
+            rdo = base.sym
+
+        # Merge.
+        while True:
+            # Locate the first R and L points to be encountered by the diving bubble.
+            rcand, lcand = base.sym.onext, base.oprev
+            # If both lcand and rcand are invalid, then base is the lower common tangent.
+            v_rcand, v_lcand = right_of(rcand.dest, base), right_of(lcand.dest, base)
+            if not (v_rcand or v_lcand):
+                break
+            # Delete R edges out of base.dest that fail the circle test.
+            if v_rcand:
+                while right_of(rcand.onext.dest, base) and \
+                      in_circle(base.dest, base.org, rcand.dest, rcand.onext.dest) == 1:
+                    t = rcand.onext
+                    delete_edge(rcand)
+                    rcand = t
+            # Symmetrically, delete L edges.
+            if v_lcand:
+                while right_of(lcand.oprev.dest, base) and \
+                      in_circle(base.dest, base.org, lcand.dest, lcand.oprev.dest) == 1:
+                    t = lcand.oprev
+                    delete_edge(lcand)
+                    lcand = t
+            # The next cross edge is to be connected to either lcand.dest or rcand.dest.
+            # If both are valid, then choose the appropriate one using the in_circle test.
+            if not v_rcand or \
+               (v_lcand and in_circle(rcand.dest, rcand.org, lcand.org, lcand.dest) == 1):
+                # Add cross edge base from rcand.dest to base.dest.
+                base = connect(lcand, base.sym)
+            else:
+                # Add cross edge base from base.org to lcand.dest
+                base = connect(base.sym, rcand.sym)
+            # GUI
+            pic.fill((160, 160, 160))
+            for e in [e for e in edges if e.data is None]:
+                pygame.draw.line(surface=pic, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
+            surface.blit(pic, (1, 1))
+            screen.blit(pygame.transform.scale(surface, screen.get_rect().size), (0, 0))
+            pygame.display.flip()
+            clock.tick(90)
+            pygame.time.wait(1000)
         return ldo, rdo
 
 

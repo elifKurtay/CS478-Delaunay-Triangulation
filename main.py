@@ -3,7 +3,7 @@ import sys
 
 import pygame
 import numpy as np
-from dnq.delaunay import delaunay as dnqdel
+from dnq.delaunay import delaunay as dnqdel, step
 
 from Button import Button
 from dnq.mesh import gen_random
@@ -60,20 +60,12 @@ def mesh_dq(surface, numSeeds):
         pygame.draw.line(surface=surface, color="Green", start_pos=e.org, end_pos=e.dest, width=1)
 
 
-def add_dq(surface):
-    surface.fill((160, 160, 160))
-    s = (random.randint(5, 735), random.randint(5, 735))
-    seeds.append(s)
-    center = np.mean(seeds, axis=0)
-    dt = Delaunay2D(center, 50 * radius)
-    print(seeds)
+def add_dq(screen, surface, pic, numSeeds):
+    clear(pic)
+    seeds = gen_random(760, 760, numSeeds)
+    step(seeds, screen, surface, pic)
     for s in seeds:
-        dt.addPoint(s)
         pygame.draw.circle(surface, "#CC00CC", s, 5)
-
-    for t in dt.exportTriangles():
-        print(t)
-        pygame.draw.polygon(surface=surface, color="Green", points=[seeds[t[0]], seeds[t[1]], seeds[t[2]]], width=1)
 
 
 def clear(surface):
@@ -84,6 +76,12 @@ def clear(surface):
 
 def get_font(size):  # Returns Press-Start-2P in the desired size
     return pygame.font.Font("assets/font.ttf", size)
+
+
+def blitRotateCenter(surf, image, topleft, angle):
+    rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(center=image.get_rect(topleft = topleft).center)
+    surf.blit(rotated_image, new_rect)
 
 
 NOP_Info = get_font(16).render("No of Points:", True, "Black")
@@ -224,7 +222,8 @@ def dq_screen():
                 elif CLEAR.checkForInput(mouse):
                     clear(pic)
                 elif STEP.checkForInput(mouse):
-                    add_dq(pic)
+                    no = int(no_of_points)
+                    add_dq(screen, fake_screen, pic, no)
                 if NOP_RECT.collidepoint(event.pos):
                     active = True
                 else:
