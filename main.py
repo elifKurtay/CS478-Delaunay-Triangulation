@@ -3,10 +3,9 @@ import sys
 
 import pygame
 import numpy as np
-from dnq.delaunay import delaunay as dnqdel, step
+from dnq.delaunay import delaunay as dnqdel, step, genRandom
 
 from Button import Button
-from dnq.mesh import gen_random
 from incremental.delaunay2D import Delaunay2D
 
 SCREEN_HEIGHT = 768
@@ -51,7 +50,7 @@ def add_inc(surface):
 
 
 def mesh_dq(surface, numSeeds):
-    seeds = gen_random(760, 760, numSeeds)
+    seeds = genRandom(760, 760, numSeeds)
     edges = dnqdel(seeds)
     for s in seeds:
         pygame.draw.circle(surface, "#CC00CC", s, 5)
@@ -62,7 +61,7 @@ def mesh_dq(surface, numSeeds):
 
 def add_dq(screen, surface, pic, numSeeds):
     clear(pic)
-    seeds = gen_random(760, 760, numSeeds)
+    seeds = genRandom(760, 760, numSeeds)
     step(seeds, screen, surface, pic)
     for s in seeds:
         pygame.draw.circle(surface, "#CC00CC", s, 5)
