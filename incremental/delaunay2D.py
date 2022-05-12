@@ -6,10 +6,10 @@ class Delaunay2D:
     def __init__(self, center=(0, 0), radius=36500):
         center = np.asarray(center)
         # Corners for super-triangles
-        self.coords = [center+radius*np.array((-1, -1)),
-                       center+radius*np.array((+1, -1)),
-                       center+radius*np.array((+1, +1)),
-                       center+radius*np.array((-1, +1))]
+        self.coords = [center + radius * np.array((-1, -1)),
+                       center + radius * np.array((+1, -1)),
+                       center + radius * np.array((+1, +1)),
+                       center + radius * np.array((-1, +1))]
         self.triangles = {}
         self.circles = {}
 
@@ -29,7 +29,7 @@ class Delaunay2D:
         A = np.bmat([[2 * pts2, [[1],
                                  [1],
                                  [1]]],
-                      [[[1, 1, 1, 0]]]])
+                     [[[1, 1, 1, 0]]]])
 
         b = np.hstack((np.sum(pts * pts, axis=1), [1]))
         x = np.linalg.solve(A, b)
@@ -43,7 +43,7 @@ class Delaunay2D:
         center, radius = self.circles[tri]
         return np.sum(np.square(center - p)) <= radius
 
-    #Bowyer-Watson increment
+    # Bowyer-Watson increment
     def addPoint(self, p):
         p = np.asarray(p)
         idx = len(self.coords)
@@ -65,7 +65,7 @@ class Delaunay2D:
             tri_op = self.triangles[T][edge]
             if tri_op not in bad_triangles:
                 # Next edge in current triangle
-                boundary.append((T[(edge+1) % 3], T[(edge-1) % 3], tri_op))
+                boundary.append((T[(edge + 1) % 3], T[(edge - 1) % 3], tri_op))
                 edge = (edge + 1) % 3
                 # Check for loop
                 if boundary[0][0] == boundary[-1][1]:
@@ -97,12 +97,12 @@ class Delaunay2D:
             new_triangles.append(T)
         N = len(new_triangles)
         for i, T in enumerate(new_triangles):
-            self.triangles[T][1] = new_triangles[(i+1) % N]   # Next neighbour
-            self.triangles[T][2] = new_triangles[(i-1) % N]   # Previous neighbour
+            self.triangles[T][1] = new_triangles[(i + 1) % N]  # Next neighbour
+            self.triangles[T][2] = new_triangles[(i - 1) % N]  # Previous neighbour
 
     def exportTriangles(self):
         """Export the current list of Delaunay triangles
         """
         # Filter out triangles with any vertex in the extended BBox
-        return [(a-4, b-4, c-4)
+        return [(a - 4, b - 4, c - 4)
                 for (a, b, c) in self.triangles if a > 3 and b > 3 and c > 3]
