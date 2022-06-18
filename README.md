@@ -1,6 +1,8 @@
 # CS478-Delaunay-Triangulation
 Implementation of Two Delaunay Triangulation Algorithms and Comparing Their Performances
 
+[Check out our report for more information!](https://github.com/elifKurtay/CS478-Delaunay-Triangulation/blob/main/Final%20Report.pdf)
+
 ## Installation
 Make sure you have Python version 3.8+ installed on your computer. We require 
 two Python libraries for this project which are NumPy and PyGame.
